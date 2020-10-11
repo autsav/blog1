@@ -39,87 +39,78 @@ class copyFiles extends Command
      * @return mixed
      */
 
-     public function source_n_destination($src, $dst)
+     public function source_n_destination($src, $dst, $list, $index)
      {
         // open the source dir
         try{
-                $dir = opendir($src);
+            $dir = opendir($src);
 
-                //Make the destination directory if not exist
-                @mkdir($dst);
+            //Make the destination directory if not exist
+            @mkdir($dst);
 
-            
-
-                //Loop through the file in source directory
-
-                foreach(scandir($src) as $file)
+            //Loop through the file in source directory
+            foreach(scandir($src) as $file)
+            {
+                if(( $file != '.') && ($file != '..'))
                 {
-                    if(( $file != '.') && ($file != '..'))
-                    {
-
-                        if( is_dir($src . '/' . $file)){
-                            // recursively callign suston copy funtion for subdirectory
-                        $this->source_n_destination($src . '/' . $file, $dst. '/' . $file );
-                            
-                        }
-                        elseif( file_exists($dst . '/' . $file))
-                            {
-                                    
-                              $this->show_failure($file);
-                                // print_r($fail);
-                                // exit();
-                            }
-                            else{
-                                copy($src . '/' . $file, $dst . '/' . $file);
-                            
-                                $success =   $this->show_success($file);
-
-                                
-    
-                                
-
-                            }
-                            // $list = array(
-                            //     'SN' => 1,
-                            //     'Source' =>$src ,
-                            //     'Destination' =>$dst ,
-                            //     'Status' => $success,
-                            //     // 'Status' => $fail,
-                            // );
-                            // $fp = fopen('file.csv', 'w');
-        
-                            // foreach ($list as $fields){
-                            //     fputcsv($fp, $fields);
-                            // }
-                            // fclose($fp);
-                            
-
-                        
-                        
-                            
+                    if( is_dir($src . '/' . $file)){
+                        // recursively callign custom copy funtion for subdirectory
+                        $tempList = $this->source_n_destination($src . '/' . $file, $dst. '/' . $file, $list, $index );
+                        $index += count($tempList);
+                        $list = array_merge($list, $tempList);                    
                     }
-                  
+                    else{                        
+                        if( file_exists($dst . '/' . $file)){  
+                            unlink($dst . '/' . $file);                     
+                        }
+                                                
+                        $success = copy($src . '/' . $file, $dst . '/' . $file);    
 
-                    
+                        $listItem = [
+                            "sn" => ++$index,
+                            "source" => $src."/".$file,
+                            "destination" => $dst."/".$file,
+                            "status" => $success ? "Success" : "Failure"
+                        ];
+                        array_push($list, $listItem);
+                    }                            
                 }
             }
-
-    
-        catch(Exception $e){
-            $this->source_n_destination($src, $dst);
-        }
-        
-                                    
-      
+            
             closedir($dir);
-       
+
+        }catch(Exception $e){
+            $listItem = [
+                "sn" => ++$index,
+                "source" => $src,
+                "destination" => $dst,
+                "status" => "Failure"
+            ];
+            array_push($list, $listItem);
+        }      
+                                
+      
+        
+        return $list;       
     }
      
     public function handle()
     { 
         $src = $this->ask('Please enter source path.');
         $dst = $this->ask('Please enter the destination path');
-        $this->source_n_destination($src, $dst);
+        $fileArray = $this->source_n_destination($src, $dst, [], 0);
+      
+        
+      
+        $fp = fopen('file.csv', 'w');
+        fputcsv($fp, ["SN", "Source", "Destination", "Status"]);
+
+        foreach ($fileArray as $fields){
+            fputcsv($fp, $fields);
+        }
+        fclose($fp);
+        dd($fileArray);
+        
     }
     public function show_success($file)
     {
