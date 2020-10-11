@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage as FacadesStorage;
 use Illuminate\Support\Facades\Storage;
 
-class copyFiles extends Command
+class CopyFiles extends Command
 {
     /**
      * The name and signature of the console command.
@@ -41,8 +41,9 @@ class copyFiles extends Command
 
      public function source_n_destination($src, $dst, $list, $index)
      {
-        // open the source dir
+        
         try{
+            // open the source directory
             $dir = opendir($src);
 
             //Make the destination directory if not exist
@@ -54,32 +55,37 @@ class copyFiles extends Command
                 if(( $file != '.') && ($file != '..'))
                 {
                     if( is_dir($src . '/' . $file)){
-                        // recursively callign custom copy funtion for subdirectory
-                        $tempList = $this->source_n_destination($src . '/' . $file, $dst. '/' . $file, $list, $index );
-                        $index += count($tempList);
-                        $list = array_merge($list, $tempList);                    
+                        // recursively calling custom copy funtion for subdirectory
+                        $tempList = $this->source_n_destination($src . '/' . $file, $dst. '/' . $file, $list, $index );// Reads the list of files inside the folder recursively
+                        $index += count($tempList); //Adds the count to previous index value
+                        $list = array_merge($list, $tempList); //It merge one or more than one array into one                   
                     }
-                    else{                        
+                    else{    
+                    // Deletes the file that are to be copied in a dir are already exist                    
                         if( file_exists($dst . '/' . $file)){  
                             unlink($dst . '/' . $file);                     
                         }
-                                                
-                        $success = copy($src . '/' . $file, $dst . '/' . $file);    
-
+                     // copies the file from source to destination and assign success value as true or false                           
+                        $success = copy($src . '/' . $file, $dst . '/' . $file);   
+                          $this->info('Success:'. $file); 
+                    // Creating an array of files information
                         $listItem = [
                             "sn" => ++$index,
                             "source" => $src."/".$file,
                             "destination" => $dst."/".$file,
                             "status" => $success ? "Success" : "Failure"
                         ];
-                        array_push($list, $listItem);
+                        array_push($list, $listItem);// It inserts one or two values at the end of the array above
                     }                            
                 }
             }
-            
+            //close the source directory
             closedir($dir);
 
         }catch(Exception $e){
+            // In case of failure creting an array
+            $this->warn('Failure:');
+
             $listItem = [
                 "sn" => ++$index,
                 "source" => $src,
@@ -95,21 +101,23 @@ class copyFiles extends Command
     }
      
     public function handle()
-    { 
+    {   // Ask user for the source and path
         $src = $this->ask('Please enter source path.');
         $dst = $this->ask('Please enter the destination path');
+
         $fileArray = $this->source_n_destination($src, $dst, [], 0);
       
         
-      
-        $fp = fopen('file.csv', 'w');
+        // $csv_dest = $this->ask('Please enter source path where you want your csv file to be downloaded');
+        //Copies the array into csv file and make available in Desktop
+        $fp = fopen('C:\Users\utsab\Desktop\file.csv', 'w');
         fputcsv($fp, ["SN", "Source", "Destination", "Status"]);
 
         foreach ($fileArray as $fields){
             fputcsv($fp, $fields);
         }
         fclose($fp);
-        dd($fileArray);
+        // dd($fileArray);
         
     }
     public function show_success($file)
