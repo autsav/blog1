@@ -110,7 +110,7 @@ class CopyFiles extends Command
         
         // $csv_dest = $this->ask('Please enter source path where you want your csv file to be downloaded');
         //Copies the array into csv file and make available in Desktop
-        $fp = fopen('C:\Users\utsab\Desktop\file.csv', 'w');
+        $fp = fopen(public_path('storage\file.csv'), 'w');// Csv File is saved in Storage/public
         fputcsv($fp, ["SN", "Source", "Destination", "Status"]);
 
         foreach ($fileArray as $fields){
