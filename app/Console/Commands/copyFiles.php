@@ -50,24 +50,30 @@ class CopyFiles extends Command
             @mkdir($dst);
 
             //Loop through the file in source directory
-            foreach(scandir($src) as $file)
+            foreach(scandir($src, 1) as $file)
             {
-                if(( $file != '.') && ($file != '..'))
+                if(( $file != '.') && ($file != '..'))// Excluding . and ..
                 {
+                    
                     if( is_dir($src . '/' . $file)){
                         // recursively calling custom copy funtion for subdirectory
                         $tempList = $this->source_n_destination($src . '/' . $file, $dst. '/' . $file, $list, $index );// Reads the list of files inside the folder recursively
+                     
                         $index += count($tempList); //Adds the count to previous index value
-                        $list = array_merge($list, $tempList); //It merge one or more than one array into one                   
+                        
+                        $list = array_merge($list, $tempList); //It merge one or more than one array into one    
+                           print_r('..is_dir');   
                     }
                     else{    
-                    // Deletes the file that are to be copied in a dir are already exist                    
+                    // Deletes the file that are to be copied in a dir that are already exist                    
                         if( file_exists($dst . '/' . $file)){  
-                            unlink($dst . '/' . $file);                     
+                            unlink($dst . '/' . $file);    
+                            print_r('..file-ext');                  
                         }
                      // copies the file from source to destination and assign success value as true or false                           
                         $success = copy($src . '/' . $file, $dst . '/' . $file);   
                           $this->info('Success:'. $file); 
+                          print_r('...Sucess'); 
                     // Creating an array of files information
                         $listItem = [
                             "sn" => ++$index,
@@ -102,15 +108,16 @@ class CopyFiles extends Command
      
     public function handle()
     {   // Ask user for the source and path
+        $index = 0;
         $src = $this->ask('Please enter source path.');
         $dst = $this->ask('Please enter the destination path');
-
-        $fileArray = $this->source_n_destination($src, $dst, [], 0);
+        
+        $fileArray = $this->source_n_destination($src, $dst, [], $index);
       
         
         // $csv_dest = $this->ask('Please enter source path where you want your csv file to be downloaded');
         //Copies the array into csv file and make available in Desktop
-        $fp = fopen(public_path('storage\file.csv'), 'w');// Csv File is saved in Storage/public
+        $fp = fopen(public_path('storage\file.csv'), 'w');
         fputcsv($fp, ["SN", "Source", "Destination", "Status"]);
 
         foreach ($fileArray as $fields){
